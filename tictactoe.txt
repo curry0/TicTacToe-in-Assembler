@@ -1,0 +1,466 @@
+; Title:   TIC TAC TOE
+; Author:  Robert Kocev
+; Date:    June 2020
+
+; Before running the game:
+;   - Set the speed of the processor to 1 kHz.
+;   - Hide the memory panel (View -> Memory) for better view.
+
+; Description:
+;   The player who succeeds in placing three of their marks in a horizontal, 
+;	vertical, or diagonal row is the winner. 
+
+;	The game is played on the following way: 
+;	for sign "X" we use the following keys: 7 8 9  
+;								  			4 5 6
+;								 			1 2 3
+
+;	for sign "0" we use the following keys: q w e
+;											a s d
+;											z x c
+
+;   For the best experience set focus to the 'keyboard' input box below
+;   the virtual keypad and use computer keyboard.
+
+JMP main
+
+JMP isr
+
+status:
+    DB 0    ; 0 - waiting, 1 - timer , 2 - key, 4 - reset, 8 - exit, I will only use key :)
+
+key:
+    DB 0    ; The number of the last key that was pressed.
+    
+isr:
+    PUSH A              ; We need register A for I/O operations.
+    PUSH B              ; We need register B to change status, only key :).
+    IN 6                ; Read the key.
+
+
+storekey:
+    SUB A, 0x30         ; Translate key code to key number.
+    MOVB [key], AL      ; Store the key.
+    MOVB BL, [status]   ; Set key pressed status.
+    ORB BL, 2			; Mask the key bit
+    MOVB [status], BL	; Save key pressed status
+    
+setkeyhandelled:
+    MOV A, 1            ; Set keyboard interrupt handelled.
+    OUT 2				; write the content to input/output register
+
+isrexit:
+	POP B				; Restore register B
+    POP A               ; Restore register A.
+    IRET                ; Return from ISR.
+
+name_image:
+	DB "\xFf\xFf\xff\x1e\x1e\x1e\xFF\x1e\xff\x1e\x1e\x1e\xff\xff\xff\xff"
+	DB "\xFf\xFf\xff\xff\x1e\xff\xFF\x1e\xff\x1e\xFf\xff\xff\xff\xff\xff"
+	DB "\xff\xFf\xFf\xff\x1e\xFF\xff\x1e\xff\x1e\xff\xff\xff\xff\xff\xff"
+	DB "\xff\xFf\xFf\xff\x1e\xff\xFF\x1e\xff\x1e\xff\xff\xff\xff\xff\xff"
+	DB "\xff\xff\xff\xff\x1e\xff\xff\x1e\xff\x1e\x1e\x1e\xff\xff\xff\xff"
+	DB "\xff\xff\xc4\xc4\xc4\xff\xC4\xc4\xc4\xff\xc4\xc4\xc4\xff\xff\xff"
+	DB "\xff\xff\xff\xc4\xff\xff\xff\xff\xC4\xff\xc4\xff\xFf\xff\xff\xFF"
+	DB "\xff\xff\xff\xc4\xff\xff\xC4\xc4\xC4\xff\xc4\xff\xFf\xff\xff\xff"
+	DB "\xff\xFf\xff\xc4\xff\xff\xC4\xff\xC4\xff\xc4\xff\xFf\xff\xff\xFF"
+	DB "\xff\xFF\xFF\xc4\xff\xff\xC4\xC4\xC4\xff\xc4\xc4\xc4\xff\xff\xff"
+	DB "\xff\xFf\x6d\x6d\x6d\xff\x6d\x6d\x6d\xff\x6d\x6d\x6d\xff\xff\xff"
+	DB "\xFf\xFF\xFF\x6d\xff\xff\x6d\xff\x6d\xFF\x6d\xff\xff\xff\xFF\xFF"
+	DB "\xFf\xFf\xFf\x6d\xff\xff\x6d\xff\x6d\xFF\x6d\x6d\xff\xff\xff\xFF"
+	DB "\xFf\xFf\xFf\x6d\xff\xff\x6d\xff\x6d\xFF\x6d\xff\xff\xff\xFF\xFF"
+	DB "\xFf\xFf\xFf\x6d\xff\xff\x6d\x6d\x6d\xFF\x6d\x6d\x6d\xff\xff\xff"
+	DB "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+
+frame_image:
+	DB "\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00"
+	DB "\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00"
+	DB "\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00"
+	DB "\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00"
+	DB "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+	DB "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+    DB "\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00"
+	DB "\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00"
+	DB "\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00"
+	DB "\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00"
+	DB "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+	DB "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+	DB "\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00"
+	DB "\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00"
+	DB "\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00"
+	DB "\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00\xff\xff\x00\x00\x00\x00"
+    
+;The strings that display on the text-display cell
+game_name_string:	DB "Tic-Tac-Toe"
+    				DB 0
+    
+winner_string: 		DB "Player 1 won"
+			   		DB 0
+               
+looser_string: 		DB "Player 2 won"
+			   		DB 0
+               
+draw_string:   		DB "It is a draw"    
+			   		DB 0
+
+
+;	The name of the game shown on the display, and the frame 
+
+draw_image:
+	MOV D, display_start	; The address of the first pixel.
+   
+draw_image_loop:
+	CMP D, display_end 		; Fill the whole display.
+	JA draw_image_return
+	MOVB CL, [A] 		    ; Get the color of the pixel.
+	MOVB [D], CL 			; Set the pixel color.
+	INC A 					; Next color.
+	INC D 					; Next pixel.
+	JMP draw_image_loop
+    
+draw_image_return:
+	RET 					; Nothing to return.
+
+
+
+display_name:
+    MOV D, 0x0EE3          ; Pointer to text display cell.
+    MOV C, game_name_string     ; Pointer to the first character of the string.
+
+name_loop:
+    MOVB AL, [C]           ; Get the character of the string.
+    CMPB AL, 0             ; Check if at the end of the string.
+    JE exit_name           ; If yes, return.
+    MOVB [D], AL           ; Print the character.
+    INC C                  ; Next char.
+    INC D                  ; Next cell.
+    JMP name_loop
+    
+exit_name:
+	RET
+
+
+game_start:
+
+   
+game_loop:
+	MOVB AL, [status]   ; Check if key was pressed.
+    ANDB AL, 2          ; Mask the key bit.
+    CMPB AL, 2          ; Check if key bit set.
+    JE gamekey			; If equal, jump
+    JMP game_loop		; If not, loop
+
+gamekey:
+    CALL draw_x_0		; Call the function
+    MOVB AL, [status]   ; Clear key status.
+    JMP game_loop
+    
+
+
+draw_x_0:
+    MOVB AL, [key] ; Get key number.
+
+
+;	The values that are compared to the register AL, are the 
+;	hexadecimal values of the signs
+key1:
+    CMPB AL, 1             ; Check if key '1' pressed
+    JNE key2
+    MOVB [0x0ff0],0x99
+    MOVB [0x0ff3],0x99
+    MOVB [0x0fc0],0x99
+    MOVB [0x0fc3],0x99
+    MOVB [0x0fd1],0x99
+    MOVB [0x0fd2],0x99
+    MOVB [0x0fe1],0x99
+    MOVB [0x0fe2],0x99
+    
+key2:
+    CMPB AL, 2               ; Check if key '2' pressed.
+    JNE key3
+    MOVB [0x0ff6],0x99
+    MOVB [0x0ff9],0x99
+    MOVB [0x0fc6],0x99
+    MOVB [0x0fc9],0x99
+    MOVB [0x0fd7],0x99
+    MOVB [0x0fd8],0x99
+    MOVB [0x0fe7],0x99
+    MOVB [0x0fe8],0x99
+
+key3:
+	CMPB AL,3				; Check if key '3' pressed
+    JNE key4
+    MOVB [0x0ffc],0x99
+    MOVB [0x0fff],0x99
+    MOVB [0x0fcc],0x99
+    MOVB [0x0fcf],0x99
+    MOVB [0x0fdd],0x99
+    MOVB [0x0fde],0x99
+    MOVB [0x0fed],0x99
+    MOVB [0x0fee],0x99
+ 
+key4:						; Check if key '4' pressed
+	CMPB AL,4
+    JNE key5
+    MOVB [0x0f90],0x99
+    MOVB [0x0f93],0x99
+    MOVB [0x0f81],0x99
+    MOVB [0x0f82],0x99
+    MOVB [0x0f71],0x99
+    MOVB [0x0f72],0x99
+    MOVB [0x0f60],0x99
+    MOVB [0x0f63],0x99
+    
+key5:						; Check if key '5' pressed
+	CMPB AL,5
+    JNE key6
+    MOVB [0x0f96],0x99
+    MOVB [0x0f99],0x99
+    MOVB [0x0f87],0x99
+    MOVB [0x0f88],0x99
+    MOVB [0x0f77],0x99
+    MOVB [0x0f78],0x99
+    MOVB [0x0f66],0x99
+    MOVB [0x0f69],0x99
+    
+key6:						; Check if key '6' pressed
+	CMPB AL,6
+    JNE key7
+    MOVB [0x0f9c],0x99
+    MOVB [0x0f9f],0x99
+    MOVB [0x0f8d],0x99
+    MOVB [0x0f8e],0x99
+    MOVB [0x0f7d],0x99
+    MOVB [0x0f7e],0x99
+    MOVB [0x0f6c],0x99
+    MOVB [0x0f6f],0x99
+    
+key7:						; Check if key '7' pressed
+    CMPB AL,7
+    JNE key8
+    MOVB [0x0f30],0x99
+    MOVB [0x0f33],0x99
+    MOVB [0x0f21],0x99
+    MOVB [0x0f22],0x99
+    MOVB [0x0f11],0x99
+    MOVB [0x0f12],0x99
+    MOVB [0x0f00],0x99
+    MOVB [0x0f03],0x99
+    
+key8:						; Check if key '8' pressed
+    CMPB AL,8
+    JNE key9
+    MOVB [0x0f36],0x99
+    MOVB [0x0f39],0x99
+    MOVB [0x0f27],0x99
+    MOVB [0x0f28],0x99
+    MOVB [0x0f17],0x99
+    MOVB [0x0f18],0x99
+    MOVB [0x0f06],0x99
+    MOVB [0x0f09],0x99
+    
+key9:						; Check if key '9' pressed
+	CMPB AL,9
+    JNE keyz
+    MOVB [0x0f3c],0x99
+    MOVB [0x0f3f],0x99
+    MOVB [0x0f2d],0x99
+    MOVB [0x0f2e],0x99
+    MOVB [0x0f1d],0x99
+    MOVB [0x0f1e],0x99
+    MOVB [0x0f0c],0x99
+    MOVB [0x0f0f],0x99
+    
+keyz:						; Check if key 'z' pressed
+	CMPB AL,74
+    JNE keyx
+    MOVB [0x0ff0],0x17
+    MOVB [0x0ff1],0x17
+    MOVB [0x0ff2],0x17
+    MOVB [0x0ff3],0x17
+    MOVB [0x0fe0],0x17
+    MOVB [0x0fe3],0x17
+    MOVB [0x0fd0],0x17
+    MOVB [0x0fd3],0x17
+    MOVB [0x0fc0],0x17
+    MOVB [0x0fc1],0x17
+    MOVB [0x0fc2],0x17
+    MOVB [0x0fc3],0x17
+	
+keyx:						; Check if key 'x' pressed
+	CMPB AL,72
+    JNE keyc
+    MOVB [0x0ff6],0x17
+    MOVB [0x0ff7],0x17
+    MOVB [0x0ff8],0x17
+    MOVB [0x0ff9],0x17
+    MOVB [0x0fe6],0x17
+    MOVB [0x0fe9],0x17
+    MOVB [0x0fd6],0x17
+    MOVB [0x0fd9],0x17
+    MOVB [0x0fc6],0x17
+    MOVB [0x0fc7],0x17
+    MOVB [0x0fc8],0x17
+    MOVB [0x0fc9],0x17
+    
+keyc:						; Check if key 'c' pressed
+	CMPB AL,51
+    JNE keya
+    MOVB [0x0ffc],0x17
+    MOVB [0x0ffd],0x17
+    MOVB [0x0ffe],0x17
+    MOVB [0x0fff],0x17
+    MOVB [0x0fec],0x17
+    MOVB [0x0fef],0x17
+    MOVB [0x0fdc],0x17
+    MOVB [0x0fdf],0x17
+    MOVB [0x0fcc],0x17
+    MOVB [0x0fcd],0x17
+    MOVB [0x0fce],0x17
+    MOVB [0x0fcf],0x17
+    
+keya:						; Check if key 'a' pressed
+	CMPB AL,49
+    JNE keys
+    MOVB [0x0f90],0x17
+    MOVB [0x0f91],0x17
+    MOVB [0x0f92],0x17
+    MOVB [0x0f93],0x17
+    MOVB [0x0f80],0x17
+    MOVB [0x0f83],0x17
+    MOVB [0x0f70],0x17
+    MOVB [0x0f73],0x17
+    MOVB [0x0f60],0x17
+    MOVB [0x0f61],0x17
+    MOVB [0x0f62],0x17
+    MOVB [0x0f63],0x17
+
+keys:						; Check if key 's' pressed
+    CMPB AL,67
+    JNE keyd
+    MOVB [0x0f96],0x17
+    MOVB [0x0f97],0x17
+    MOVB [0x0f98],0x17
+    MOVB [0x0f99],0x17
+    MOVB [0x0f86],0x17
+    MOVB [0x0f89],0x17
+    MOVB [0x0f76],0x17
+    MOVB [0x0f79],0x17
+    MOVB [0x0f66],0x17
+    MOVB [0x0f67],0x17
+    MOVB [0x0f68],0x17
+    MOVB [0x0f69],0x17
+
+keyd:						; Check if key 'd' pressed
+	CMPB AL,52
+    JNE keyq
+    MOVB [0x0f9c],0x17
+    MOVB [0x0f9d],0x17
+    MOVB [0x0f9e],0x17
+    MOVB [0x0f9f],0x17
+    MOVB [0x0f8c],0x17
+    MOVB [0x0f8f],0x17
+    MOVB [0x0f7c],0x17
+    MOVB [0x0f7f],0x17
+    MOVB [0x0f6c],0x17
+    MOVB [0x0f6d],0x17
+    MOVB [0x0f6e],0x17
+    MOVB [0x0f6f],0x17
+
+keyq:						; Check if key 'q' pressed
+	CMPB AL, 65
+    JNE keyw
+    MOVB [0x0f30],0x17
+    MOVB [0x0f31],0x17
+    MOVB [0x0f32],0x17
+    MOVB [0x0f33],0x17
+    MOVB [0x0f20],0x17
+    MOVB [0x0f23],0x17
+    MOVB [0x0f10],0x17
+    MOVB [0x0f13],0x17
+    MOVB [0x0f00],0x17
+    MOVB [0x0f01],0x17
+    MOVB [0x0f02],0x17
+    MOVB [0x0f03],0x17
+    
+keyw:						; Check if key 'w' pressed
+	CMPB AL, 71
+    JNE keye
+    MOVB [0x0f36],0x17
+    MOVB [0x0f37],0x17
+    MOVB [0x0f38],0x17
+    MOVB [0x0f39],0x17
+    MOVB [0x0f26],0x17
+    MOVB [0x0f29],0x17
+    MOVB [0x0f16],0x17
+    MOVB [0x0f19],0x17
+    MOVB [0x0f06],0x17
+    MOVB [0x0f07],0x17
+    MOVB [0x0f08],0x17
+    MOVB [0x0f09],0x17
+    
+keye:						; Check if key 'e' pressed
+	CMPB AL, 53
+    JNE winner
+    MOVB [0x0f3c],0x17
+    MOVB [0x0f3d],0x17
+    MOVB [0x0f3e],0x17
+    MOVB [0x0f3f],0x17
+    MOVB [0x0f2c],0x17
+    MOVB [0x0f2f],0x17
+    MOVB [0x0f1c],0x17
+    MOVB [0x0f1f],0x17
+    MOVB [0x0f0c],0x17
+    MOVB [0x0f0d],0x17
+    MOVB [0x0f0e],0x17
+    MOVB [0x0f0f],0x17
+                
+winner_looser_draw:
+
+winner:
+    MOV D, 0x0Ee2          ; Pointer to text display cell.
+    MOV C,winner_string
+	CMPB AL, 66			   ;	hexadecimal for 'r'
+	JNE looser
+    JMP name_loop
+    
+looser:
+    MOV D, 0x0Ee2          ; Pointer to text display cell.
+    MOV C,looser_string
+	CMPB AL, 68            ; hexadecimal for 't'
+    JNE draw
+    JMP name_loop
+
+draw:
+    MOV D, 0x0Ee2          ; Pointer to text display cell.
+    MOV C,draw_string
+	CMPB AL, 73            ; hexadecimal for 'y'
+    JNE turnexit
+    JMP name_loop
+
+turnexit:
+    RET						; Nothing to return
+
+main:
+	MOV SP, 0x0EDF 			; Initialize the stack pointer.
+	MOV A, name_image 		; get the address of the image
+	CALL draw_image 		; draw_image(name_image)
+	CALL display_name		; display_name(game_name_string), it's initialized in the fucntion
+	MOV A,frame_image		; get the address of the image
+	CALL draw_image			; draw_image(frame_image)
+    MOV A, 1            	; Set interrupt for keyboard
+    OUT 0
+    STI                		; Enable interrupts.
+    CALL game_start			; The start of the game
+	CALL winner_looser_draw	; Check for the winner
+    
+finish:
+	CLI						; Clear the interrupts before finish
+	HLT						; Finish the program
+    
+    
+; Graphic display constants
+org 0x0f00
+display_start:
+org 0x0FFF
+display_end:
